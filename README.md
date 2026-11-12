@@ -5,6 +5,7 @@ Userscripts that automate routine chores on websites, mostly downloading stateme
 | Script | Site | What it does |
 | --- | --- | --- |
 | [eversource/eversource-bill-downloader.user.js](eversource/eversource-bill-downloader.user.js) | Eversource (billing at `secure8.i-doxs.net`) | Adds a **Download bills** button to Account History that saves every listed bill PDF |
+| [bcbs/bcbs-claims-exporter.user.js](bcbs/bcbs-claims-exporter.user.js) | Blue Cross Blue Shield of MA (`member.bluecrossma.com`) | Adds an **Export claims** button to My Claims that saves a CSV of every listed claim's billing breakdown plus each claim's explanation-of-benefits PDF |
 
 ## Installing a script
 
@@ -27,3 +28,19 @@ Userscripts that automate routine chores on websites, mostly downloading stateme
 How it works: each View link is an ASP.NET postback. The script replays that POST with `fetch`,
 follows the redirect to `BillView.aspx`, reads the PDF URL from its `#main_printPdf` iframe,
 reads the Statement Date from page 1 with pdf.js, and downloads it. Set `LIMIT` in the script to a small number when testing.
+
+## Blue Cross Blue Shield of MA
+
+1. Log in at member.bluecrossma.com → My Plan & Claims → My Claims.
+2. Set the filter (dates, provider, etc.) and **Apply**.
+3. Click **Export claims** (bottom-left). For every listed claim except pre-treatment estimates it saves:
+   - `Downloads/BCBS/<today yyyymmdd> - BCBS Claims.csv`: one row per service in the claim's billing
+     breakdown (claim number, patient, provider, service dates and codes, amount charged, allowed,
+     paid by Blue Cross, deductible, coinsurance, what you owe, …). Claims with no breakdown yet
+     (Pending) get a single row of claim totals.
+   - `Downloads/BCBS/<date of service yyyymmdd> - <Provider>.pdf`: the claim's explanation of
+     benefits, when one exists (pharmacy, pending, and some older claims have none).
+
+How it works: claim numbers are read from the list, then the script calls the same JSON API the
+site uses (`digitalapi.bluecrossma.com/digital/user-claims/v1/claim-details` and `v3/eob-document`)
+with the page's own access token, instead of opening each claim page.

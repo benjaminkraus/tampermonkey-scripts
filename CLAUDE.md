@@ -21,6 +21,10 @@ Syntax check after editing: `node --check <site>/<name>.user.js`
 4. Replay that request from inside the live page with `evaluate_script` before writing the script.
    Test page-dependent code in the real page, not only in node: the site's own JS can break libraries
    (see the Eversource `Array.prototype` note below), which node tests miss.
+5. Dry-run the finished script with `evaluate_script` (via `sourcePath`, since full runs exceed the 120 s
+   inline limit and go to the background): wrap the script source in an async function that defines a
+   `GM_download` stub recording name/size, plus `alert` and `URL.createObjectURL` stubs (sites may wrap
+   `fetch` so it can't read `blob:` URLs), then click the injected button and wait for it to re-enable.
 
 ## Conventions
 
@@ -57,3 +61,21 @@ Gotchas:
   "fake worker" (the "Setting up fake worker" console warning is expected) instead of a Worker the
   site's CSP could block.
 - The table's dates/amounts don't always match the PDF the row opens; trust the PDF.
+
+## BCBS MA script (`bcbs/bcbs-claims-exporter.user.js`)
+
+Runs on `member.bluecrossma.com` (Angular SPA; `@match` is the whole site and the button is shown only
+while `/myclaims` has claim cards, since the list can be reached without a page load). Claim cards
+have stable `data-qa="myclaims-claims-information-*"` attributes; the claim number is the displayed
+"Claim No." with spaces removed. Pre-treatment estimates (`.pre-label`) are skipped.
+Output names were chosen by the user and differ from the general convention: EOBs are
+`BCBS/<first date of service> - <Provider as shown in the list>.pdf`; the CSV is
+`BCBS/<today> - BCBS Claims.csv` (one row per service; Pending claims get one totals row).
+
+API (`https://digitalapi.bluecrossma.com/digital/user-claims`), GET with headers only:
+`authorization: Bearer <sessionStorage.loggedinUserApigee .access_token>`, `x-claimnumber`,
+`x-clientsessionid` (`sessionStorage.clientSessionId`), `x-clientname: MyBlueWeb`, `x-clientlocale: EN`,
+and **required** `x-clientversion` (the release id in the site's asset paths, e.g. `26.11.21-aup.9`;
+missing → 400). The anti-bot headers the site's wrapped `fetch` adds are not needed.
+- `v1/claim-details` → claim totals plus `services[]` (per-line amounts, codes, provider).
+- `v3/eob-document` → `{ eobDocument: <base64 PDF> }`; claims without one answer HTTP 500 wrapping a 404.
