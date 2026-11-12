@@ -23,7 +23,7 @@
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  // "10/30/2026" or "10/30/26" -> "20261030"
+  // "01/31/2026" or "01/31/26" -> "20260131"
   function compactDate(us) {
     const m = us.match(/(\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})\b/);
     if (!m) return us.replace(/\W+/g, '');
@@ -31,7 +31,7 @@
     return `${year}${m[1].padStart(2, '0')}${m[2].padStart(2, '0')}`;
   }
 
-  // The table only shows the due date; the issue date is printed on the bill as "Statement Date: 10/05/26".
+  // The table only shows the due date; the issue date is printed on the bill as "Statement Date: 01/05/26".
   // pdf.js returns page text as fragments ("Sta", "tement", "Da", "te:") in no useful order, so rebuild
   // page-1 lines by grouping fragments on the same baseline and sorting them left to right.
   // (The @require'd worker sets globalThis.pdfjsWorker, so pdf.js runs in-page instead of spawning a Worker.)
